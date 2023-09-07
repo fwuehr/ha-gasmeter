@@ -1,0 +1,60 @@
+esphome:
+  name: gasmeter
+  friendly_name: Gasmeter
+
+esp8266:
+  board: d1_mini
+  restore_from_flash: True
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: 
+
+ota:
+
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: ""
+    password: ""
+
+captive_portal:
+globals:
+  - id: pulses_total
+    type: int
+    restore_value: true
+    initial_value: '242985'  # initial value of your gasmeter
+
+
+
+binary_sensor:
+  - platform: gpio
+    id: internal_pulse_counter
+    pin:
+      number: D1
+      mode: INPUT_PULLUP
+    name: "live-impulse"
+    filters:
+      - delayed_on: 10ms
+    on_press:
+      then:
+        - lambda: id(pulses_total) += 1;
+        
+sensor:
+  - platform: template
+    name: "gas_consumption"
+    device_class: gas
+    unit_of_measurement: "m³"
+    state_class: "total"
+    icon: "mdi:fire"
+    accuracy_decimals: 2
+    lambda: |-
+      return id(pulses_total) * 0.01;
